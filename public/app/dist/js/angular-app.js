@@ -1,26 +1,44 @@
-angular.module('app', ['ui.router']);
+angular.module('app', ['ui.router', 'ngResource']);
+
+
+angular.module('app').run(function ($http) {
+    window.BASE_URL = 'http://api.angular-tasks.com/api';
+    $http.defaults.headers.common.Authorization = localStorage.getItem('token');
+})
 
 angular.module('app').config(['$locationProvider', function($locationProvider) {
     $locationProvider.html5Mode(true);
 }]);
 angular.module('app')
-    .controller('AuthLoginController', function () {
+    .controller('AuthLoginController', function ($scope, AuthService) {
+        $scope.user = {};
 
+        $scope.login = function (event) {
+            event.preventDefault();
+            AuthService.login($scope.user, (res) => {
+                localStorage.setItem('token', res.token);
+            })
+        }
     });
 
 
 angular.module('app')
-    .controller('AuthRegisterController', function ($scope) {
+    .controller('AuthRegisterController', function ($scope, AuthService) {
         $scope.days = new Array(31);
         $scope.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
+        $scope.years = new Array(110);
         $scope.user = {
-            date_of_birth : {}
+
         }
         
         $scope.register = ($event) => {
             $event.preventDefault();
-            console.log($scope.user);
+            $scope.user.date_of_birth = [$scope.user.month, $scope.user.day, $scope.user.year].join(' ');
+            AuthService.register($scope.user, (res) => {
+
+            },  (err) => {
+
+            })
         }
     });
 angular.module('app')
@@ -83,3 +101,16 @@ angular.module('app')
                 }
             })
     });
+angular.module('app')
+    .factory('AuthService', ['$resource', function($resource) {
+        return $resource(null, {id: '@id'}, {
+            login : {
+                url   : `${BASE_URL}/auth/login`,
+                method: 'POST'
+            },
+            register: {
+                url   : `${BASE_URL}/auth/register`,
+                method: 'POST'
+            }
+        });
+}]);

@@ -28,7 +28,7 @@ class CreateUsersTable extends Migration
             $table->smallInteger('year');
 
             $table->tinyInteger('status')->default(\App\Models\User::PENDING);
-            $table->string('password', 80);
+            $table->string('password', 80)->nullable();
             $table->boolean('is_admin')->default(0);
             $table->timestamps();
 

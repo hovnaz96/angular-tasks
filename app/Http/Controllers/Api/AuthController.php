@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Exceptions\UnauthenticatedException;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -20,6 +20,7 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $credentials = $request->only('email', 'password');
+        $credentials = $credentials + ['status' => User::APPROVED];
 
         if(!Auth::attempt($credentials))
             throw new UnauthenticatedException();
@@ -38,8 +39,24 @@ class AuthController extends Controller
         ], 200);
     }
 
+    /**
+     * @param RegisterRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function register(RegisterRequest $request)
     {
+        /** @var array $data */
+        $data = $request->only(['name', 'surname', 'email', 'phone', 'gender']);
+        /** @var Carbon $date */
+        $date = Carbon::createFromFormat('M j Y', $request->date_of_birth);
+        $data = array_merge($data, [
+            'month' => $date->format('M'),
+            'day'   => $date->day,
+            'year'  => $date->year
+        ]);
 
+        User::query()->create($data);
+
+        return response()->json(['message' => 'success'], 201);
     }
 }

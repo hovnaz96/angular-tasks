@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
@@ -23,23 +24,20 @@ class RegisterRequest extends FormRequest
      */
     public function rules()
     {
-        $date_of_birth = implode(' ', [
-            $this->input('month'),
-            $this->input('day'),
-            $this->input('year')
-        ]);
-
-        $this->request->add(['date_of_birth' => $date_of_birth]);
-
         return [
             'name'      => 'required|max:80|string',
             'surname'   => 'required|max:80|string',
             'email'     => 'required|email|string|max:80|unique:users,email',
             'phone'     => 'required|numeric|unique:users,phone',
-            'month'     => "required|date_format:'M'",
-            'day'       => "required|date_format:'j'",
-            'year'      => "required|date_format:'Y'",
-            'date_of_birth' => 'required|date_format:"M j Y"'
+            'date_of_birth' => 'required|date_format:"M j Y"',
+            'gender'    => 'required:in' . User::FEMALE . ',' . User::MALE
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'date_of_birth.date_format' => 'Invalid Date'
         ];
     }
 }

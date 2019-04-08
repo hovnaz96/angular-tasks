@@ -15,11 +15,13 @@ mix.js('resources/js/app.js', 'public/app/dist/js')
    .sass('resources/sass/app.scss', 'public/app/dist/css')
     .combine([
         'node_modules/angular/angular.min.js',
-        'node_modules/@uirouter/angularjs/release/angular-ui-router.js'
+        'node_modules/@uirouter/angularjs/release/angular-ui-router.js',
+        'node_modules/angular-resource/angular-resource.min.js'
     ], 'public/app/dist/js/angular.js')
     .combine([
         'public/app/app.js',
         'public/app/**/*Module.js',
-        'public/app/**/*State.js'
+        'public/app/**/*State.js',
+        'public/app/services/*Service.js'
     ], 'public/app/dist/js/angular-app.js')
     .sourceMaps();
