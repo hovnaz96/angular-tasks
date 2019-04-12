@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -19,11 +20,18 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->only('email');
         $credentials = $credentials + ['status' => User::APPROVED];
 
-        if(!Auth::attempt($credentials))
+        $user = User::query()
+            ->where($credentials)
+            ->first();
+
+        if(empty($user) || !Hash::check($request->password, $user->password))
             throw new UnauthenticatedException();
+
+        /** @var User $user */
+        \auth()->setUser($user);
 
         if(empty(auth()->user()->api_token)) {
             $token = base64_encode(Str::random(191));

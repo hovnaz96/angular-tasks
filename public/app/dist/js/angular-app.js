@@ -1,22 +1,29 @@
 angular.module('app', ['ui.router', 'ngResource']);
 
 
-angular.module('app').run(function ($http) {
+angular.module('app').run(function ($http, AuthManager) {
     window.BASE_URL = 'http://api.angular-tasks.com/api';
     $http.defaults.headers.common.Authorization = localStorage.getItem('token');
+
+    console.log(AuthManager.isAuthenticated());
 })
 
 angular.module('app').config(['$locationProvider', function($locationProvider) {
     $locationProvider.html5Mode(true);
 }]);
 angular.module('app')
-    .controller('AuthLoginController', function ($scope, AuthService) {
+    .controller('AccountIndexController', function () {
+
+    });
+angular.module('app')
+    .controller('AuthLoginController', function ($scope, AuthService, $state) {
         $scope.user = {};
 
         $scope.login = function (event) {
             event.preventDefault();
             AuthService.login($scope.user, (res) => {
                 localStorage.setItem('token', res.token);
+                $state.go('account');
             })
         }
     });
@@ -44,6 +51,26 @@ angular.module('app')
 angular.module('app')
     .controller('HomeIndexController', function () {
 
+    });
+angular.module('app')
+    .config(function ($stateProvider) {
+        $stateProvider
+            .state({
+                name: 'account',
+                url: '/account',
+                views: {
+                    'header@': {
+                        templateUrl: '/modules/_partials/_header.html',
+                    },
+                    'main@': {
+                        templateUrl: '/modules/Account/views/index.html',
+                        controller : 'AccountIndexController'
+                    },
+                    'footer@': {
+                        templateUrl: '/modules/_partials/_footer.html',
+                    }
+                }
+            })
     });
 angular.module('app')
     .config(function ($stateProvider) {
@@ -101,6 +128,14 @@ angular.module('app')
                 }
             })
     });
+angular.module('app')
+    .factory('AuthManager', ['$rootScope', function($rootScope) {
+        return {
+            isAuthenticated() {
+                return localStorage.getItem('token') !== null;
+            }
+        }
+    }]);
 angular.module('app')
     .factory('AuthService', ['$resource', function($resource) {
         return $resource(null, {id: '@id'}, {

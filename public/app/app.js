@@ -1,9 +1,11 @@
 angular.module('app', ['ui.router', 'ngResource']);
 
 
-angular.module('app').run(function ($http) {
+angular.module('app').run(function ($http, AuthManager) {
     window.BASE_URL = 'http://api.angular-tasks.com/api';
     $http.defaults.headers.common.Authorization = localStorage.getItem('token');
+
+    console.log(AuthManager.isAuthenticated());
 })
 
 angular.module('app').config(['$locationProvider', function($locationProvider) {

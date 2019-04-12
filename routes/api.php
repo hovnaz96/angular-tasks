@@ -14,7 +14,8 @@ use Illuminate\Http\Request;
 */
 
 Route::get('/', function (Request $request) {
-    dd(bcrypt('secret'));
+    $token = \Illuminate\Support\Str::random(60);
+    dd(hash('sha256', $token));
 });
 
 Route::group(['prefix' => 'auth'], function () {
@@ -23,6 +24,8 @@ Route::group(['prefix' => 'auth'], function () {
 });
 
 
-Route::group(['middleware' => 'apiLogin'], function () {
-
+Route::group(['middleware' => 'auth-api'], function () {
+    Route::get('tests', function() {
+        dd(auth()->user());
+    });
 });
