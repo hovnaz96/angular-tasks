@@ -1,29 +1,71 @@
-angular.module('app', ['ui.router', 'ngResource']);
+const APP = angular.module('app', ['ui.router', 'ngResource']);
 
 
-angular.module('app').run(function ($http, AuthManager) {
+APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
     window.BASE_URL = 'http://api.angular-tasks.com/api';
-    $http.defaults.headers.common.Authorization = localStorage.getItem('token');
+    AuthManager.checkAuth();
 
-    console.log(AuthManager.isAuthenticated());
+    $transitions.onStart({}, function(transition) {
+        let requireAuth = transition.to().data ? transition.to().data.requiresAuth : null;
+
+        if(requireAuth === true && !AuthManager.isAuthenticated()) {
+            return $state.target('login');
+        } else if(requireAuth === false && AuthManager.isAuthenticated()) {
+            return $state.target('home');
+        } else return true;
+    });
+
+    $rootScope.logout = function (event) {
+        event.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        AuthManager.checkAuth();
+        $state.go('home');
+    }
 })
 
-angular.module('app').config(['$locationProvider', function($locationProvider) {
+APP.config(['$locationProvider',  function($locationProvider) {
     $locationProvider.html5Mode(true);
 }]);
-angular.module('app')
-    .controller('AccountIndexController', function () {
 
+
+APP.config(function Config($httpProvider) {
+        $httpProvider.interceptors.push(function() {
+            // let state = $injector.get('$state');
+            return {
+                'request': function(config) {
+                    config.headers['Authorization'] = localStorage.getItem('token');
+                    return config;
+                },
+
+                'response': function(response) {
+                    if(response.status === 403) {
+                        // state.go('login');
+                    }
+                    // same as above
+                    return response;
+                }
+            };
+        });
     });
 angular.module('app')
-    .controller('AuthLoginController', function ($scope, AuthService, $state) {
+    .controller('AccountIndexController', function (AuthService) {
+        console.log(123);
+        AuthService.me();
+    });
+angular.module('app')
+    .controller('AuthLoginController', function ($scope, AuthService, $state, AuthManager) {
         $scope.user = {};
 
         $scope.login = function (event) {
             event.preventDefault();
             AuthService.login($scope.user, (res) => {
-                localStorage.setItem('token', res.token);
-                $state.go('account');
+                AuthManager.setToken(res.token);
+                AuthService.me({}, (res) => {
+                    localStorage.setItem('user', JSON.stringify(res.user));
+                    AuthManager.checkAuth();
+                    $state.go('account');
+                })
             })
         }
     });
@@ -69,6 +111,9 @@ angular.module('app')
                     'footer@': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
+                },
+                data : {
+                    requiresAuth : true
                 }
             })
     });
@@ -89,6 +134,9 @@ angular.module('app')
                     'footer@': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
+                },
+                data : {
+                    requiresAuth : false
                 }
             })
             .state({
@@ -105,6 +153,9 @@ angular.module('app')
                     'footer@': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
+                },
+                data : {
+                    requiresAuth : false
                 }
             })
     });
@@ -115,14 +166,14 @@ angular.module('app')
                 name: 'home',
                 url: '/',
                 views: {
-                    'header@': {
+                    'header': {
                         templateUrl: '/modules/_partials/_header.html',
                     },
                     'main@': {
                         templateUrl: '/modules/Home/views/index.html',
                         controller : 'HomeIndexController'
                     },
-                    'footer@': {
+                    'footer': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
                 }
@@ -133,6 +184,16 @@ angular.module('app')
         return {
             isAuthenticated() {
                 return localStorage.getItem('token') !== null;
+            },
+            setToken(token) {
+                localStorage.setItem('token', token);
+            },
+            user() {
+                return JSON.parse(localStorage.getItem('user'));
+            },
+            checkAuth() {
+                $rootScope.user = this.user();
+                $rootScope.isAuthenticated = this.isAuthenticated();
             }
         }
     }]);
@@ -146,6 +207,10 @@ angular.module('app')
             register: {
                 url   : `${BASE_URL}/auth/register`,
                 method: 'POST'
+            },
+            me : {
+                url   : `${BASE_URL}/me`,
+                method: 'GET'
             }
         });
 }]);

@@ -67,4 +67,13 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'success'], 201);
     }
+
+
+    /**
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function me()
+    {
+        return response()->json(['user' => \auth()->user()->only(['name', 'surname'])]);
+    }
 }

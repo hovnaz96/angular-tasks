@@ -8,6 +8,10 @@ angular.module('app')
             register: {
                 url   : `${BASE_URL}/auth/register`,
                 method: 'POST'
+            },
+            me : {
+                url   : `${BASE_URL}/me`,
+                method: 'GET'
             }
         });
 }]);

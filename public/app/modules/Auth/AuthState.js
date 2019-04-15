@@ -15,6 +15,9 @@ angular.module('app')
                     'footer@': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
+                },
+                data : {
+                    requiresAuth : false
                 }
             })
             .state({
@@ -31,6 +34,9 @@ angular.module('app')
                     'footer@': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
+                },
+                data : {
+                    requiresAuth : false
                 }
             })
     });

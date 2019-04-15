@@ -5,14 +5,14 @@ angular.module('app')
                 name: 'home',
                 url: '/',
                 views: {
-                    'header@': {
+                    'header': {
                         templateUrl: '/modules/_partials/_header.html',
                     },
                     'main@': {
                         templateUrl: '/modules/Home/views/index.html',
                         controller : 'HomeIndexController'
                     },
-                    'footer@': {
+                    'footer': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
                 }

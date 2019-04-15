@@ -3,6 +3,16 @@ angular.module('app')
         return {
             isAuthenticated() {
                 return localStorage.getItem('token') !== null;
+            },
+            setToken(token) {
+                localStorage.setItem('token', token);
+            },
+            user() {
+                return JSON.parse(localStorage.getItem('user'));
+            },
+            checkAuth() {
+                $rootScope.user = this.user();
+                $rootScope.isAuthenticated = this.isAuthenticated();
             }
         }
     }]);

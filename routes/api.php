@@ -25,6 +25,8 @@ Route::group(['prefix' => 'auth'], function () {
 
 
 Route::group(['middleware' => 'auth-api'], function () {
+    Route::get('me', 'AuthController@me');
+
     Route::get('tests', function() {
         dd(auth()->user());
     });

@@ -1,12 +1,16 @@
 angular.module('app')
-    .controller('AuthLoginController', function ($scope, AuthService, $state) {
+    .controller('AuthLoginController', function ($scope, AuthService, $state, AuthManager) {
         $scope.user = {};
 
         $scope.login = function (event) {
             event.preventDefault();
             AuthService.login($scope.user, (res) => {
-                localStorage.setItem('token', res.token);
-                $state.go('account');
+                AuthManager.setToken(res.token);
+                AuthService.me({}, (res) => {
+                    localStorage.setItem('user', JSON.stringify(res.user));
+                    AuthManager.checkAuth();
+                    $state.go('account');
+                })
             })
         }
     });

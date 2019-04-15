@@ -15,6 +15,9 @@ angular.module('app')
                     'footer@': {
                         templateUrl: '/modules/_partials/_footer.html',
                     }
+                },
+                data : {
+                    requiresAuth : true
                 }
             })
     });

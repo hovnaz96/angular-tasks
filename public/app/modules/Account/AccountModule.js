@@ -1,4 +1,5 @@
 angular.module('app')
-    .controller('AccountIndexController', function () {
-
+    .controller('AccountIndexController', function (AuthService) {
+        console.log(123);
+        AuthService.me();
     });
