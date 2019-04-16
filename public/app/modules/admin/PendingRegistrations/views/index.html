@@ -1,0 +1,33 @@
+<div class="container-fluid">
+    <div class="row">
+        <section ui-view="sidebar"></section>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4 bg-white">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Pending Registrations</h1>
+            </div>
+            <table class="table table-bordered">
+                <tr>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Gender</th>
+                    <th>Actions</th>
+                </tr>
+
+                <tr>
+                    <td>1</td>
+                    <td>Asss aaaa</td>
+                    <td>+45456456</td>
+                    <td>dfsafds@mail.ru</td>
+                    <td>Male</td>
+                    <td>
+                        <button class="btn btn-success btn-sm">Approve</button>
+                        <button class="btn btn-danger btn-sm">Reject</button>
+                    </td>
+                </tr>
+            </table>
+        </main>
+    </div>
+</div>

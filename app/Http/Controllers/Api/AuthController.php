@@ -21,7 +21,42 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $credentials = $request->only('email');
-        $credentials = $credentials + ['status' => User::APPROVED];
+        $credentials = $credentials + ['status' => User::APPROVED, 'is_admin' => false];
+
+        $user = User::query()
+            ->where($credentials)
+            ->first();
+
+        if(empty($user) || !Hash::check($request->password, $user->password))
+            throw new UnauthenticatedException();
+
+        /** @var User $user */
+        \auth()->setUser($user);
+
+        if(empty(auth()->user()->api_token)) {
+            $token = base64_encode(Str::random(191));
+
+            auth()->user()->update([
+                'api_token' => $token
+            ]);
+        }
+
+        return response()->json([
+            'token'     => \auth()->user()->api_token ?? $token,
+            'message'   => 'success'
+        ], 200);
+    }
+
+
+    /**
+     * @param LoginRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws UnauthenticatedException
+     */
+    public function loginAdmin(LoginRequest $request)
+    {
+        $credentials = $request->only('email');
+        $credentials = $credentials + ['status' => User::APPROVED, 'is_admin' => true];
 
         $user = User::query()
             ->where($credentials)

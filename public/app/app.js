@@ -1,4 +1,4 @@
-const APP = angular.module('app', ['ui.router', 'ngResource']);
+const APP = angular.module('app', ['ui.router', 'ngResource', 'ngAnimate', 'toastr']);
 
 
 APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
@@ -6,13 +6,24 @@ APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
     AuthManager.checkAuth();
 
     $transitions.onStart({}, function(transition) {
-        let requireAuth = transition.to().data ? transition.to().data.requiresAuth : null;
+        const next = transition.to();
 
-        if(requireAuth === true && !AuthManager.isAuthenticated()) {
-            return $state.target('login');
-        } else if(requireAuth === false && AuthManager.isAuthenticated()) {
-            return $state.target('home');
-        } else return true;
+        const isAdmin     = next.data ? next.data.isAdmin : false;
+        const requireAuth = next.data ? next.data.requiresAuth : null;
+
+        if(isAdmin) {
+            if(requireAuth === true && !AuthManager.isAuthenticatedAdmin()) {
+                return $state.target('loginAdmin');
+            } else if(requireAuth === false && AuthManager.isAuthenticatedAdmin()) {
+                return $state.target('admin');
+            } else return true;
+        } else {
+            if(requireAuth === true && !AuthManager.isAuthenticated()) {
+                return $state.target('login');
+            } else if(requireAuth === false && AuthManager.isAuthenticated()) {
+                return $state.target('home');
+            } else return true;
+        }
     });
 
     $rootScope.logout = function (event) {
@@ -22,6 +33,15 @@ APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
         AuthManager.checkAuth();
         $state.go('home');
     }
+
+    $rootScope.logoutAdmin = function (event) {
+        console.log(123);
+        event.preventDefault();
+        localStorage.removeItem('token_admin');
+        localStorage.removeItem('admin');
+        AuthManager.checkAuthAdmin();
+        $state.go('loginAdmin');
+    }
 })
 
 APP.config(['$locationProvider',  function($locationProvider) {
@@ -30,21 +50,28 @@ APP.config(['$locationProvider',  function($locationProvider) {
 
 
 APP.config(function Config($httpProvider) {
-        $httpProvider.interceptors.push(function() {
-            // let state = $injector.get('$state');
+        $httpProvider.interceptors.push(['$injector', '$q', function($injector, $q) {
+            // let state  = $injector.get('$state');
             return {
                 'request': function(config) {
-                    config.headers['Authorization'] = localStorage.getItem('token');
+                    const tokenName = (config.data && config.data.adminRoute) ? 'token_admin' : 'token';
+                    config.headers['Authorization'] = localStorage.getItem(tokenName);
                     return config;
                 },
 
                 'response': function(response) {
-                    if(response.status === 403) {
-                        // state.go('login');
-                    }
                     // same as above
                     return response;
+                },
+                'responseError': function (rejection) {
+                    const toastr = $injector.get('toastr');
+                    if(rejection.status === 401) {
+                        toastr.error('Unauthorized');
+                        // state.go('login');
+                    }
+
+                    return $q.reject(rejection);
                 }
             };
-        });
+        }]);
     });

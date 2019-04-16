@@ -11,7 +11,7 @@ angular.module('app')
                     AuthManager.checkAuth();
                     $state.go('account');
                 })
-            })
+            }, (err) => {})
         }
     });
 

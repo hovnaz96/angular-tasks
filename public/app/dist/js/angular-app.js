@@ -1,4 +1,4 @@
-const APP = angular.module('app', ['ui.router', 'ngResource']);
+const APP = angular.module('app', ['ui.router', 'ngResource', 'ngAnimate', 'toastr']);
 
 
 APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
@@ -6,13 +6,24 @@ APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
     AuthManager.checkAuth();
 
     $transitions.onStart({}, function(transition) {
-        let requireAuth = transition.to().data ? transition.to().data.requiresAuth : null;
+        const next = transition.to();
 
-        if(requireAuth === true && !AuthManager.isAuthenticated()) {
-            return $state.target('login');
-        } else if(requireAuth === false && AuthManager.isAuthenticated()) {
-            return $state.target('home');
-        } else return true;
+        const isAdmin     = next.data ? next.data.isAdmin : false;
+        const requireAuth = next.data ? next.data.requiresAuth : null;
+
+        if(isAdmin) {
+            if(requireAuth === true && !AuthManager.isAuthenticatedAdmin()) {
+                return $state.target('loginAdmin');
+            } else if(requireAuth === false && AuthManager.isAuthenticatedAdmin()) {
+                return $state.target('admin');
+            } else return true;
+        } else {
+            if(requireAuth === true && !AuthManager.isAuthenticated()) {
+                return $state.target('login');
+            } else if(requireAuth === false && AuthManager.isAuthenticated()) {
+                return $state.target('home');
+            } else return true;
+        }
     });
 
     $rootScope.logout = function (event) {
@@ -22,6 +33,15 @@ APP.run(function ($http, AuthManager, $transitions, $state, $rootScope) {
         AuthManager.checkAuth();
         $state.go('home');
     }
+
+    $rootScope.logoutAdmin = function (event) {
+        console.log(123);
+        event.preventDefault();
+        localStorage.removeItem('token_admin');
+        localStorage.removeItem('admin');
+        AuthManager.checkAuthAdmin();
+        $state.go('loginAdmin');
+    }
 })
 
 APP.config(['$locationProvider',  function($locationProvider) {
@@ -30,28 +50,60 @@ APP.config(['$locationProvider',  function($locationProvider) {
 
 
 APP.config(function Config($httpProvider) {
-        $httpProvider.interceptors.push(function() {
-            // let state = $injector.get('$state');
+        $httpProvider.interceptors.push(['$injector', '$q', function($injector, $q) {
+            // let state  = $injector.get('$state');
             return {
                 'request': function(config) {
-                    config.headers['Authorization'] = localStorage.getItem('token');
+                    const tokenName = (config.data && config.data.adminRoute) ? 'token_admin' : 'token';
+                    config.headers['Authorization'] = localStorage.getItem(tokenName);
                     return config;
                 },
 
                 'response': function(response) {
-                    if(response.status === 403) {
-                        // state.go('login');
-                    }
                     // same as above
                     return response;
+                },
+                'responseError': function (rejection) {
+                    const toastr = $injector.get('toastr');
+                    if(rejection.status === 401) {
+                        toastr.error('Unauthorized');
+                        // state.go('login');
+                    }
+
+                    return $q.reject(rejection);
                 }
             };
-        });
+        }]);
     });
 angular.module('app')
     .controller('AccountIndexController', function (AuthService) {
         console.log(123);
         AuthService.me();
+    });
+angular.module('app')
+    .controller('AuthAdminLoginController', function ($scope, AuthService, $state, AuthManager) {
+        $scope.user = {};
+
+        $scope.login = function (event) {
+            event.preventDefault();
+            AuthService.loginAdmin($scope.user, (res) => {
+                AuthManager.setTokenAdmin(res.token);
+                AuthService.meAdmin({}, (res) => {
+                    localStorage.setItem('admin', JSON.stringify(res.user));
+                    AuthManager.checkAuthAdmin();
+                    $state.go('admin');
+                })
+            }, (err) => {})
+        }
+    });
+
+angular.module('app')
+    .controller('AdminHomeIndexController', function () {
+
+    });
+angular.module('app')
+    .controller('PendingRegistrationsIndexController', function () {
+
     });
 angular.module('app')
     .controller('AuthLoginController', function ($scope, AuthService, $state, AuthManager) {
@@ -66,7 +118,7 @@ angular.module('app')
                     AuthManager.checkAuth();
                     $state.go('account');
                 })
-            })
+            }, (err) => {})
         }
     });
 
@@ -113,6 +165,72 @@ angular.module('app')
                     }
                 },
                 data : {
+                    requiresAuth : true
+                }
+            })
+    });
+angular.module('app')
+    .config(function ($stateProvider) {
+        $stateProvider
+            .state({
+                name: 'loginAdmin',
+                url: '/admin-login',
+                views: {
+                    'main@': {
+                        templateUrl: '/modules/admin/Auth/views/login.html',
+                        controller : 'AuthAdminLoginController'
+                    }
+                },
+                data : {
+                    isAdmin      : true,
+                    requiresAuth : false
+                }
+            })
+    });
+angular.module('app')
+    .config(function ($stateProvider) {
+        $stateProvider
+            .state({
+                name: 'admin',
+                url: '/admin',
+                views: {
+                    'header@' : {
+                        templateUrl: '/modules/_partials/_admin_header.html',
+                    },
+                    'main@': {
+                        templateUrl: '/modules/admin/Home/views/index.html',
+                        controller : 'AdminHomeIndexController'
+                    },
+                    'sidebar@admin' : {
+                        templateUrl: '/modules/_partials/_admin_sidebar.html',
+                    }
+                },
+                data : {
+                    isAdmin      : true,
+                    requiresAuth : true
+                }
+            })
+    });
+angular.module('app')
+    .config(function ($stateProvider) {
+        $stateProvider
+            .state({
+                name: 'admin.pendingRegistrations',
+                url: '/registrations/pending',
+                views: {
+                    'header@' : {
+                        templateUrl: '/modules/_partials/_admin_header.html',
+                    },
+                    'main@': {
+                        templateUrl: '/modules/admin/PendingRegistrations/views/index.html',
+                        controller : 'PendingRegistrationsIndexController'
+                    },
+                    'sidebar@admin.pendingRegistrations' : {
+                        templateUrl: '/modules/_partials/_admin_sidebar.html',
+                    }
+                },
+                data : {
+                    isAdmin      : true,
                     requiresAuth : true
                 }
             })
@@ -194,7 +312,22 @@ angular.module('app')
             checkAuth() {
                 $rootScope.user = this.user();
                 $rootScope.isAuthenticated = this.isAuthenticated();
-            }
+            },
+
+
+            isAuthenticatedAdmin() {
+                return localStorage.getItem('token_admin') !== null;
+            },
+            setTokenAdmin (token) {
+                localStorage.setItem('token_admin', token);
+            },
+            admin() {
+                return JSON.parse(localStorage.getItem('admin'));
+            },
+            checkAuthAdmin() {
+                $rootScope.user = this.admin();
+                $rootScope.isAuthenticated = this.isAuthenticatedAdmin();
+            },
         }
     }]);
 angular.module('app')
@@ -204,6 +337,10 @@ angular.module('app')
                 url   : `${BASE_URL}/auth/login`,
                 method: 'POST'
             },
+            loginAdmin : {
+                url   : `${BASE_URL}/auth/login/admin`,
+                method: 'POST'
+            },
             register: {
                 url   : `${BASE_URL}/auth/register`,
                 method: 'POST'
@@ -211,6 +348,13 @@ angular.module('app')
             me : {
                 url   : `${BASE_URL}/me`,
                 method: 'GET'
+            },
+            meAdmin : {
+                url   : `${BASE_URL}/me`,
+                method: 'GET',
+                data : {
+                    adminRoute: true
+                }
             }
         });
 }]);

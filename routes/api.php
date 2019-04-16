@@ -20,6 +20,7 @@ Route::get('/', function (Request $request) {
 
 Route::group(['prefix' => 'auth'], function () {
     Route::post('login', 'AuthController@login');
+    Route::post('login/admin', 'AuthController@loginAdmin');
     Route::post('register', 'AuthController@register');
 });
 

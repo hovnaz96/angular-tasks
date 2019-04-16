@@ -5,6 +5,10 @@ angular.module('app')
                 url   : `${BASE_URL}/auth/login`,
                 method: 'POST'
             },
+            loginAdmin : {
+                url   : `${BASE_URL}/auth/login/admin`,
+                method: 'POST'
+            },
             register: {
                 url   : `${BASE_URL}/auth/register`,
                 method: 'POST'
@@ -12,6 +16,13 @@ angular.module('app')
             me : {
                 url   : `${BASE_URL}/me`,
                 method: 'GET'
+            },
+            meAdmin : {
+                url   : `${BASE_URL}/me`,
+                method: 'GET',
+                data : {
+                    adminRoute: true
+                }
             }
         });
 }]);
