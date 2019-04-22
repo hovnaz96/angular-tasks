@@ -20,7 +20,7 @@ angular.module('app')
             meAdmin : {
                 url   : `${BASE_URL}/me`,
                 method: 'GET',
-                data : {
+                meta : {
                     adminRoute: true
                 }
             }

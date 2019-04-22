@@ -54,7 +54,7 @@ APP.config(function Config($httpProvider) {
             // let state  = $injector.get('$state');
             return {
                 'request': function(config) {
-                    const tokenName = (config.data && config.data.adminRoute) ? 'token_admin' : 'token';
+                    const tokenName = (config.meta && config.meta.adminRoute) ? 'token_admin' : 'token';
                     config.headers['Authorization'] = localStorage.getItem(tokenName);
                     return config;
                 },
@@ -75,6 +75,34 @@ APP.config(function Config($httpProvider) {
             };
         }]);
     });
+
+
+APP.directive('pagination', function() {
+    return {
+        restrict: 'E',
+        replace: true,
+        scope: {
+            total       : '=',
+            currentPage : '=',
+            perPage     : '=',
+            action      : '='
+        },
+        templateUrl: 'modules/_partials/_pagination.html',
+        link: function(scope, element, attributes) {
+            scope.pages = 0;
+            scope.changePage = function (page) {
+                scope.action(page);
+            }
+
+            scope.$watch('total', (newVal) => {
+                if(newVal) {
+                    scope.pages = new Array(Math.ceil(scope.total / scope.perPage));
+                }
+            })
+        }
+    };
+});
+
 angular.module('app')
     .controller('AccountIndexController', function (AuthService) {
         console.log(123);
@@ -102,8 +130,29 @@ angular.module('app')
 
     });
 angular.module('app')
-    .controller('PendingRegistrationsIndexController', function () {
+    .controller('PendingRegistrationsIndexController', function (PendingRegistrationService, $scope, toastr) {
+        $scope.status = 'pending';
+        $scope.data = {};
 
+        $scope.getData = function (page) {
+            PendingRegistrationService.get({status : $scope.status, page : page}, (res) => {
+                $scope.data = res.users;
+            }, (err) => {})
+        };
+
+        $scope.getData();
+
+
+        $scope.approve = function (userID) {
+            if(confirm('Are you sure you want approve this user?')) {
+                PendingRegistrationService.approve({user_id : userID}, (res) => {
+                    toastr.success('Successfully Approved');
+                    $scope.getData(1);
+                }, (err) => {
+                    toastr.error('Error in approving.');
+                })
+            }
+        }
     });
 angular.module('app')
     .controller('AuthLoginController', function ($scope, AuthService, $state, AuthManager) {
@@ -298,6 +347,32 @@ angular.module('app')
             })
     });
 angular.module('app')
+    .factory('PendingRegistrationService', ['$resource', function($resource) {
+        return $resource(null, {id: '@id'}, {
+            get : {
+                url   : `${BASE_URL}/admin/registrations/:status`,
+                method: 'GET',
+                meta : {
+                    adminRoute: true
+                }
+            },
+            approve : {
+                url   : `${BASE_URL}/admin/registrations/approve`,
+                method: 'PUT',
+                meta : {
+                    adminRoute: true
+                }
+            },
+            reject : {
+                url   : `${BASE_URL}/admin/registrations/reject`,
+                method: 'PUT',
+                meta : {
+                    adminRoute: true
+                }
+            }
+        });
+    }]);
+angular.module('app')
     .factory('AuthManager', ['$rootScope', function($rootScope) {
         return {
             isAuthenticated() {
@@ -352,7 +427,7 @@ angular.module('app')
             meAdmin : {
                 url   : `${BASE_URL}/me`,
                 method: 'GET',
-                data : {
+                meta : {
                     adminRoute: true
                 }
             }

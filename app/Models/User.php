@@ -18,6 +18,7 @@ class User extends Authenticatable
     const APPROVED = 2;
     const REJECTED = 3;
 
+    protected $appends = ['full_name'];
 
 
     /**
@@ -37,4 +38,38 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+
+
+    /**
+     * @return array
+     */
+    public static function getStatuses()
+    {
+        return [
+            'approved' => self::APPROVED,
+            'rejected' => self::REJECTED,
+            'pending'  => self::PENDING
+        ];
+    }
+
+
+    /**
+     * @return string
+     */
+    public function getFullNameAttribute()
+    {
+        return $this->attributes['name'] . ' ' . $this->attributes['surname'];
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getGenderAttribute() {
+        $genders = [
+            self::MALE   => 'Male',
+            self::FEMALE => 'Female'
+        ];
+
+        return $genders[$this->attributes['gender']];
+    }
 }

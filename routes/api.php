@@ -31,4 +31,10 @@ Route::group(['middleware' => 'auth-api'], function () {
     Route::get('tests', function() {
         dd(auth()->user());
     });
+
+
+    Route::group(['prefix' => 'admin', 'namespace' => 'Admin'], function () {
+        Route::get('registrations/{status}', 'PendingRegistrationController@index');
+        Route::put('registrations/approve', 'PendingRegistrationController@approve');
+    });
 });

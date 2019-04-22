@@ -54,7 +54,7 @@ APP.config(function Config($httpProvider) {
             // let state  = $injector.get('$state');
             return {
                 'request': function(config) {
-                    const tokenName = (config.data && config.data.adminRoute) ? 'token_admin' : 'token';
+                    const tokenName = (config.meta && config.meta.adminRoute) ? 'token_admin' : 'token';
                     config.headers['Authorization'] = localStorage.getItem(tokenName);
                     return config;
                 },
@@ -75,3 +75,30 @@ APP.config(function Config($httpProvider) {
             };
         }]);
     });
+
+
+APP.directive('pagination', function() {
+    return {
+        restrict: 'E',
+        replace: true,
+        scope: {
+            total       : '=',
+            currentPage : '=',
+            perPage     : '=',
+            action      : '='
+        },
+        templateUrl: 'modules/_partials/_pagination.html',
+        link: function(scope, element, attributes) {
+            scope.pages = 0;
+            scope.changePage = function (page) {
+                scope.action(page);
+            }
+
+            scope.$watch('total', (newVal) => {
+                if(newVal) {
+                    scope.pages = new Array(Math.ceil(scope.total / scope.perPage));
+                }
+            })
+        }
+    };
+});

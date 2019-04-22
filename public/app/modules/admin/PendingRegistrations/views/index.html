@@ -16,18 +16,23 @@
                     <th>Actions</th>
                 </tr>
 
-                <tr>
-                    <td>1</td>
-                    <td>Asss aaaa</td>
-                    <td>+45456456</td>
-                    <td>dfsafds@mail.ru</td>
-                    <td>Male</td>
+                <tr ng-repeat="user in data.data">
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.phone }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.gender }}</td>
                     <td>
-                        <button class="btn btn-success btn-sm">Approve</button>
-                        <button class="btn btn-danger btn-sm">Reject</button>
+                        <button class="btn btn-success btn-sm" ng-click="approve(user.id)">Approve</button>
+                        <button class="btn btn-danger btn-sm" ng-click="reject(user.id)">Reject</button>
                     </td>
                 </tr>
             </table>
+            <pagination total="data.total"
+                        current-page="data.current_page"
+                        per-page="data.per_page"
+                        action="getData"
+            ></pagination>
         </main>
     </div>
 </div>
