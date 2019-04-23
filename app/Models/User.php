@@ -72,4 +72,15 @@ class User extends Authenticatable
 
         return $genders[$this->attributes['gender']];
     }
+
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function team()
+    {
+        return $this
+            ->hasOne(UserTeam::class, 'user_id', 'id')
+            ->with('team');
+    }
 }

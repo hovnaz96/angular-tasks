@@ -130,9 +130,19 @@ angular.module('app')
 
     });
 angular.module('app')
-    .controller('PendingRegistrationsIndexController', function (PendingRegistrationService, $scope, toastr) {
+    .controller('PendingRegistrationsIndexController', function (PendingRegistrationService, $scope, toastr, AdminTeamService) {
         $scope.status = 'pending';
+        $scope.selectedUser = {
+            user_id : null,
+            team_id : null
+        };
+
         $scope.data = {};
+        $scope.teams = [];
+
+        AdminTeamService.get({all : true}, (res) => {
+            $scope.teams = res.teams;
+        });
 
         $scope.getData = function (page) {
             PendingRegistrationService.get({status : $scope.status, page : page}, (res) => {
@@ -143,14 +153,97 @@ angular.module('app')
         $scope.getData();
 
 
-        $scope.approve = function (userID) {
+        $scope.approve = function () {
             if(confirm('Are you sure you want approve this user?')) {
-                PendingRegistrationService.approve({user_id : userID}, (res) => {
+                PendingRegistrationService.approve($scope.selectedUser, (res) => {
                     toastr.success('Successfully Approved');
                     $scope.getData(1);
                 }, (err) => {
                     toastr.error('Error in approving.');
                 })
+            }
+        }
+
+        $scope.reject = function (userID) {
+            if(confirm('Are you sure you want to reject this user?')) {
+                PendingRegistrationService.reject({user_id : userID}, (res) => {
+                    toastr.success('Successfully Rejected.');
+                    $scope.getData(1);
+                }, (err) => {
+                    toastr.error('Error in rejection.');
+                })
+            }
+        }
+    });
+angular.module('app')
+    .controller('AdminTeamIndexController', function (AdminTeamService, $scope, toastr) {
+        $scope.data = {};
+
+        $scope.getData = function (page) {
+            AdminTeamService.get({page : page}, (res) => {
+                $scope.data = res.teams;
+            }, (err) => {})
+        };
+
+        $scope.getData();
+
+        $scope.delete = function (teamID) {
+            if(confirm('Are you sure want to delete this team?')) {
+                AdminTeamService.delete({id : teamID}, (res) => {
+                    toastr.success('Successfully Deleted.');
+                    $scope.getData(1);
+                }, (err) => {});
+            }
+        }
+    });
+
+angular.module('app')
+    .controller('AdminTeamMembersController', function (AdminTeamService, $scope, toastr) {
+        $scope.data = {};
+
+        $scope.getData = function (page) {
+            AdminTeamService.get({page : page}, (res) => {
+                $scope.data = res.teams;
+            }, (err) => {})
+        };
+
+        $scope.getData();
+
+        $scope.delete = function (teamID) {
+            if(confirm('Are you sure want to delete this team?')) {
+                AdminTeamService.delete({id : teamID}, (res) => {
+                    toastr.success('Successfully Deleted.');
+                    $scope.getData(1);
+                }, (err) => {});
+            }
+        }
+    });
+
+angular.module('app')
+    .controller('AdminTeamEditController', function (AdminTeamService, $scope, toastr, $stateParams, $state) {
+        $scope.isEdit = $stateParams.id > 0;
+
+        $scope.team = {};
+
+        if($scope.isEdit) {
+            AdminTeamService.show({id : $stateParams.id}, (res) => {
+                $scope.team = res.team;
+            })
+        }
+
+        $scope.save = function (event) {
+            event.preventDefault();
+
+            if($scope.isEdit) {
+                AdminTeamService.update($scope.team, (res) => {
+                    toastr.success('Successfully Updated Team.');
+                    $state.go('admin.teams');
+                }, (err) => {})
+            } else {
+                AdminTeamService.store($scope.team, (res) => {
+                    toastr.success('Successfully Created Team.');
+                    $state.go('admin.teams');
+                }, (err) => {})
             }
         }
     });
@@ -288,6 +381,71 @@ angular.module('app')
     .config(function ($stateProvider) {
         $stateProvider
             .state({
+                name: 'admin.teams',
+                url: '/teams',
+                views: {
+                    'header@' : {
+                        templateUrl: '/modules/_partials/_admin_header.html',
+                    },
+                    'main@': {
+                        templateUrl: '/modules/admin/Team/views/index.html',
+                        controller : 'AdminTeamIndexController'
+                    },
+                    'sidebar@admin.teams' : {
+                        templateUrl: '/modules/_partials/_admin_sidebar.html',
+                    }
+                },
+                data : {
+                    isAdmin      : true,
+                    requiresAuth : true
+                }
+            })
+            .state({
+                name: 'admin.teams.edit',
+                url: '/:id/edit',
+                views: {
+                    'header@' : {
+                        templateUrl: '/modules/_partials/_admin_header.html',
+                    },
+                    'main@': {
+                        templateUrl: '/modules/admin/Team/views/edit.html',
+                        controller : 'AdminTeamEditController'
+                    },
+                    'sidebar@admin.teams.edit' : {
+                        templateUrl: '/modules/_partials/_admin_sidebar.html',
+                    }
+                },
+                data : {
+                    isAdmin      : true,
+                    requiresAuth : true
+                }
+            })
+
+            .state({
+                name: 'admin.teams.members',
+                url: '/:id/members',
+                views: {
+                    'header@' : {
+                        templateUrl: '/modules/_partials/_admin_header.html',
+                    },
+                    'main@': {
+                        templateUrl: '/modules/admin/Team/views/show.html',
+                        controller : 'AdminTeamMembersController'
+                    },
+                    'sidebar@admin.teams.members' : {
+                        templateUrl: '/modules/_partials/_admin_sidebar.html',
+                    }
+                },
+                data : {
+                    isAdmin      : true,
+                    requiresAuth : true
+                }
+            })
+    });
+angular.module('app')
+    .config(function ($stateProvider) {
+        $stateProvider
+            .state({
                 name: 'login',
                 url: '/login',
                 views: {
@@ -372,6 +530,18 @@ angular.module('app')
             }
         });
     }]);
+angular.module('app')
+    .factory('AdminTeamService', ['$resource', function($resource) {
+        return $resource(`${BASE_URL}/admin/teams/:id`, {id: '@id'}, {
+            get     : {method : 'GET',      meta : {adminRoute: true}},
+            show    : {method : 'GET',      meta : {adminRoute: true}},
+            store   : {method : 'POST',     meta : {adminRoute: true}},
+            update  : {method : 'PUT',      meta : {adminRoute: true}},
+            delete  : {method : 'DELETE',   meta : {adminRoute: true}}
+        });
+    }]);
+
+
 angular.module('app')
     .factory('AuthManager', ['$rootScope', function($rootScope) {
         return {

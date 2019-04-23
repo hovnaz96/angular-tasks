@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Mail\Admin\ApproveEmail;
+use App\Mail\Admin\RejectEmail;
 use App\Models\User;
+use App\Models\UserTeam;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
@@ -41,7 +43,8 @@ class PendingRegistrationController extends Controller
     public function approve(Request $request)
     {
         $this->validate($request, [
-            'user_id' => 'required|integer|exists:users,id'
+            'user_id' => 'required|integer|exists:users,id',
+            'team_id' => 'required|integer|exists:teams,id',
         ]);
 
         $password = rand(100000, 999999);
@@ -55,9 +58,38 @@ class PendingRegistrationController extends Controller
             'status'   => User::APPROVED
         ]);
 
+        UserTeam::query()->updateOrCreate([
+            'user_id' => $request->user_id
+        ], ['team_id' => $request->team_id]);
 
         Mail::to($user)
             ->queue(new ApproveEmail($user, $password));
+
+        return response()->json(['message' => 'success']);
+    }
+
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function reject(Request $request)
+    {
+        $this->validate($request, [
+            'user_id' => 'required|integer|exists:users,id'
+        ]);
+
+        $user = User::query()
+            ->where('status', '=', User::PENDING)
+            ->findOrFail($request->user_id);
+
+        $user->update([
+            'status'   => User::REJECTED
+        ]);
+
+        Mail::to($user)
+            ->queue(new RejectEmail($user));
 
         return response()->json(['message' => 'success']);
     }
